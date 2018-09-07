@@ -1,9 +1,10 @@
 #ifndef SIMPLECLIENT_MQTT_H
 #define SIMPLECLIENT_MQTT_H
 
+/*#include <cstring>
+#include <cstdio>*/
+
 #include <mosquittopp.h>
-#include <cstring>
-#include <cstdio>
 
 #define MAX_PAYLOAD 50
 #define DEFAULT_KEEP_ALIVE 60

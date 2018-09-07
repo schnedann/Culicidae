@@ -1,9 +1,12 @@
-#include "mqtt.h"
-#define PUBLISH_TOPIC "EXAMPLE_TOPIC"
+#include <cstring>
+#include <cstdio>
 
 #ifdef DEBUG
-#include <iostream>
+  #include <iostream>
 #endif
+
+#include "mqtt.h"
+#define PUBLISH_TOPIC "EXAMPLE_TOPIC"
 
 mqtt_client::mqtt_client(const char *id, const char *host, int port) : mosquittopp(id)
 {
@@ -52,7 +55,7 @@ void mqtt_client::on_message(const struct mosquitto_message *message)
         if (!strcmp(buf, "STATUS"))
         {
             snprintf(buf, payload_size, "This is a Status Message...");
-            publish(NULL, PUBLISH_TOPIC, strlen(buf), buf);
+            publish(nullptr, PUBLISH_TOPIC, strlen(buf), buf);
             #ifdef DEBUG
                 std::cout << "Status Request Recieved." << std::endl;
             #endif
@@ -61,7 +64,7 @@ void mqtt_client::on_message(const struct mosquitto_message *message)
         if (!strcmp(buf, "ON"))
         {
             snprintf(buf, payload_size, "Turning on...");
-            publish(NULL, PUBLISH_TOPIC, strlen(buf), buf);
+            publish(nullptr, PUBLISH_TOPIC, strlen(buf), buf);
             #ifdef DEBUG
                 std::cout << "Request to turn on." << std::endl;
             #endif
@@ -70,7 +73,7 @@ void mqtt_client::on_message(const struct mosquitto_message *message)
         if (!strcmp(buf, "OFF"))
         {
             snprintf(buf, payload_size, "Turning off...");
-            publish(NULL, PUBLISH_TOPIC, strlen(buf), buf);
+            publish(nullptr, PUBLISH_TOPIC, strlen(buf), buf);
             #ifdef DEBUG
                 std::cout << "Request to turn off." << std:: endl;
             #endif

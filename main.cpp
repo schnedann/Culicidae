@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "mqtt.h"
 
 #define CLIENT_ID "Client_ID"
@@ -7,33 +9,31 @@
 
 int main(int argc, char *argv[])
 {
-    class mqtt_client *iot_client;
-    int rc;
+  class mqtt_client *iot_client;
+  int rc;
 
-    char client_id[] = CLIENT_ID;
-    char host[] = BROKER_ADDRESS;
-    int port = MQTT_PORT;
+  char client_id[] = CLIENT_ID;
+  char host[] = BROKER_ADDRESS;
+  int port = MQTT_PORT;
 
-    mosqpp::lib_init();
+  mosqpp::lib_init();
 
-    if (argc > 1)
-        strcpy (host, argv[1]);
+  if (argc > 1){
+    strcpy (host, argv[1]);
+  }
+  iot_client = new mqtt_client(client_id, host, port);
 
-    iot_client = new mqtt_client(client_id, host, port);
-
-    while(1)
-    {
-        rc = iot_client->loop();
-        if (rc)
-        {
-            iot_client->reconnect();
-        }
-        else
-            iot_client->subscribe(NULL, MQTT_TOPIC);
+  while(1){
+    rc = iot_client->loop();
+    if (rc){
+      iot_client->reconnect();
+    }else{
+      iot_client->subscribe(nullptr, MQTT_TOPIC);
     }
+  }
 
-    mosqpp::lib_cleanup();
+  mosqpp::lib_cleanup();
 
-    return 0;
+  return 0;
 }
 
