@@ -23,16 +23,20 @@ int main(int argc, char *argv[]){
     host = "iot.eclipse.org";
   }
 
-  iot_client = new mqtt_client(CLIENT_ID.c_str(), host.c_str(), MQTT_PORT);
+  iot_client = new mqtt_client(CLIENT_ID, host, MQTT_PORT);
 
-  while(1){
-    rc = iot_client->loop();
-    if (rc){
+  uint32_t cnt = 0;
+  while(true){
+    rc = iot_client->loop(50000,10);
+    if(rc){
       iot_client->reconnect();
     }else{
       iot_client->subscribe(nullptr, MQTT_TOPIC.c_str());
     }
+    if(1000000<cnt++) break;
   }
+
+  delete iot_client;
 
   mosqpp::lib_cleanup();
 

@@ -14,11 +14,11 @@ public:
   constexpr static uint16_t const DEFAULT_KEEP_ALIVE = 60;
   static std::string const PUBLISH_TOPIC;
 
-    mqtt_client (std::string const id, std::string const host, uint16_t port);
-    ~mqtt_client();
+    mqtt_client (const std::string &id, const std::string &host, uint16_t port);
+    ~mqtt_client()=default;
 
     void on_connect(int rc);
-    void on_message(const struct mosquitto_message *message);
+    void on_message(struct mosquitto_message const& message);
     void on_subscribe(int mid, int qos_count, const int *granted_qos);
 };
 
