@@ -6,77 +6,73 @@
 #endif
 
 #include "mqtt.h"
-#define PUBLISH_TOPIC "EXAMPLE_TOPIC"
 
-mqtt_client::mqtt_client(const char *id, const char *host, int port) : mosquittopp(id)
-{
-    int keepalive = DEFAULT_KEEP_ALIVE;
-    connect(host, port, keepalive);
+using namespace std;
+
+string const mqtt_client::mqtt_client::PUBLISH_TOPIC = "EXAMPLE_TOPIC";
+
+mqtt_client::mqtt_client(const string id, const string host, uint16_t port) : mosquittopp(id.c_str()){
+  uint16_t keepalive = DEFAULT_KEEP_ALIVE;
+  connect(host.c_str(), static_cast<int>(port), static_cast<int>(keepalive));
+  return;
 }
 
-mqtt_client::~mqtt_client()
-{
+mqtt_client::~mqtt_client(){
 }
 
-void mqtt_client::on_connect(int rc)
-{
-    if (!rc)
-    {
-        #ifdef DEBUG
-            std::cout << "Connected - code " << rc << std::endl;
-        #endif
-    }
-}
-
-void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos)
-{
+void mqtt_client::on_connect(int rc){
+  if (!rc){
     #ifdef DEBUG
-        std::cout << "Subscription succeeded." << std::endl;
+        cout << "Connected - code " << rc << "\n";
     #endif
+  }
+  return;
+}
+
+void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
+  #ifdef DEBUG
+    cout << "Subscription succeeded." << "\n";
+  #endif
+  return;
 }
 
 void mqtt_client::on_message(const struct mosquitto_message *message)
 {
-    int payload_size = MAX_PAYLOAD + 1;
-    char buf[payload_size];
+  string buff;
+  buff.reserve(MAX_PAYLOAD);
 
-    if(!strcmp(message->topic, PUBLISH_TOPIC))
-    {
-        memset(buf, 0, payload_size * sizeof(char));
+  if(0==PUBLISH_TOPIC.compare(message->topic)){
 
-        /* Copy N-1 bytes to ensure always 0 terminated. */
-        memcpy(buf, message->payload, MAX_PAYLOAD * sizeof(char));
+    buff.copy(reinterpret_cast<char*>(message->payload),size_t(message->payloadlen),0);
 
-        #ifdef DEBUG
-            std::cout << buf << std::endl;
-        #endif
+    #ifdef DEBUG
+      cout << buff.c_str() << "\n";
+    #endif
 
-        // Examples of messages for M2M communications...
-        if (!strcmp(buf, "STATUS"))
-        {
-            snprintf(buf, payload_size, "This is a Status Message...");
-            publish(nullptr, PUBLISH_TOPIC, strlen(buf), buf);
-            #ifdef DEBUG
-                std::cout << "Status Request Recieved." << std::endl;
-            #endif
-        }
-
-        if (!strcmp(buf, "ON"))
-        {
-            snprintf(buf, payload_size, "Turning on...");
-            publish(nullptr, PUBLISH_TOPIC, strlen(buf), buf);
-            #ifdef DEBUG
-                std::cout << "Request to turn on." << std::endl;
-            #endif
-        }
-
-        if (!strcmp(buf, "OFF"))
-        {
-            snprintf(buf, payload_size, "Turning off...");
-            publish(nullptr, PUBLISH_TOPIC, strlen(buf), buf);
-            #ifdef DEBUG
-                std::cout << "Request to turn off." << std:: endl;
-            #endif
-        }
+    // Examples of messages for M2M communications...
+    if (!strcmp(buff.c_str(), "STATUS")){
+      buff = "This is a Status Message...";
+      publish(nullptr, PUBLISH_TOPIC.c_str(), static_cast<int>(buff.size()), buff.c_str());
+      #ifdef DEBUG
+        cout << "Status Request Recieved." << "\n";
+      #endif
     }
+
+    if (!strcmp(buff.c_str(), "ON")){
+      buff = "Turning on...";
+      publish(nullptr, PUBLISH_TOPIC.c_str(), static_cast<int>(buff.size()), buff.c_str());
+      #ifdef DEBUG
+        cout << "Request to turn on." << "\n";
+      #endif
+    }
+
+    if (!strcmp(buff.c_str(), "OFF")){
+      buff = "Turning off...";
+      publish(nullptr, PUBLISH_TOPIC.c_str(), static_cast<int>(buff.size()), buff.c_str());
+      #ifdef DEBUG
+        cout << "Request to turn off." << std:: endl;
+      #endif
+    }
+  }
+  return;
 }

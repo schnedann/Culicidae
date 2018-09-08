@@ -1,34 +1,36 @@
+#include <string>
 #include <cstring>
-
+#include <cstdint>
 #include "mqtt.h"
 
-#define CLIENT_ID "Client_ID"
-#define BROKER_ADDRESS "localhost"
-#define MQTT_PORT 1883;
-#define MQTT_TOPIC "EXAMPLE_TOPIC"
+using namespace std;
+
+          static string const   CLIENT_ID      = "Client_ID";
+          static string const   BROKER_ADDRESS = "localhost";
+constexpr static uint16_t const MQTT_PORT      = 1883;
+          static string const   MQTT_TOPIC     = "EXAMPLE_TOPIC";
 
 int main(int argc, char *argv[])
 {
+
+
   class mqtt_client *iot_client;
   int rc;
 
-  char client_id[] = CLIENT_ID;
-  char host[] = BROKER_ADDRESS;
-  int port = MQTT_PORT;
-
   mosqpp::lib_init();
 
+  string host;
   if (argc > 1){
-    strcpy (host, argv[1]);
+    host = string(argv[1]);
   }
-  iot_client = new mqtt_client(client_id, host, port);
+  iot_client = new mqtt_client(CLIENT_ID.c_str(), host.c_str(), MQTT_PORT);
 
   while(1){
     rc = iot_client->loop();
     if (rc){
       iot_client->reconnect();
     }else{
-      iot_client->subscribe(nullptr, MQTT_TOPIC);
+      iot_client->subscribe(nullptr, MQTT_TOPIC.c_str());
     }
   }
 
