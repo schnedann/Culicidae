@@ -5,9 +5,15 @@
 
 using namespace std;
 
+          static string const   TEST_BROKER_01 = "test.mosquitto.org";
+          static string const   TEST_BROKER_02 = "iot.eclipse.org";
+
           static string const   CLIENT_ID      = "Client_ID";
           static string const   BROKER_ADDRESS = "localhost";
-constexpr static uint16_t const MQTT_PORT      = 1883;
+constexpr static uint16_t const MQTT_PORT            = 1883;
+constexpr static uint16_t const MQTT_SSL_PORT        = 8883;
+constexpr static uint16_t const MQTT_WEBSOCKS_PORT   = 80;
+constexpr static uint16_t const MQTT_SECUREWEBS_PORT = 443;
           static string const   MQTT_TOPIC     = "EXAMPLE_TOPIC";
 
 int main(int argc, char *argv[]){
@@ -20,7 +26,7 @@ int main(int argc, char *argv[]){
   if (argc > 1){
     host = string(argv[1]);
   }else{
-    host = "iot.eclipse.org";
+    host = TEST_BROKER_01;
   }
 
   iot_client = new mqtt_client(CLIENT_ID, host, MQTT_PORT);

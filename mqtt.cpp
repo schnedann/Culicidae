@@ -16,8 +16,8 @@ string const mqtt_client::mqtt_client::PUBLISH_TOPIC = "EXAMPLE_TOPIC";
  * @param port
  */
 mqtt_client::mqtt_client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()){
-  uint16_t keepalive = DEFAULT_KEEP_ALIVE;
-  connect(host.c_str(), static_cast<int>(port), static_cast<int>(keepalive));
+  int keepalive = static_cast<int>(DEFAULT_KEEP_ALIVE);
+  connect(host, port, keepalive);
   return;
 }
 
