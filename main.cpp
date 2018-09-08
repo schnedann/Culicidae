@@ -10,10 +10,7 @@ using namespace std;
 constexpr static uint16_t const MQTT_PORT      = 1883;
           static string const   MQTT_TOPIC     = "EXAMPLE_TOPIC";
 
-int main(int argc, char *argv[])
-{
-
-
+int main(int argc, char *argv[]){
   class mqtt_client *iot_client;
   int rc;
 
@@ -22,7 +19,10 @@ int main(int argc, char *argv[])
   string host;
   if (argc > 1){
     host = string(argv[1]);
+  }else{
+    host = "iot.eclipse.org";
   }
+
   iot_client = new mqtt_client(CLIENT_ID.c_str(), host.c_str(), MQTT_PORT);
 
   while(1){

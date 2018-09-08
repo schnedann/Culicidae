@@ -1,9 +1,7 @@
 #include <cstring>
 #include <cstdio>
+#include <iostream>
 
-#ifdef DEBUG
-  #include <iostream>
-#endif
 
 #include "mqtt.h"
 
@@ -22,17 +20,17 @@ mqtt_client::~mqtt_client(){
 
 void mqtt_client::on_connect(int rc){
   if (!rc){
-    #ifdef DEBUG
-        cout << "Connected - code " << rc << "\n";
-    #endif
+    if(1){
+      cout << "Connected - code " << rc << "\n";
+    }
   }
   return;
 }
 
 void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
-  #ifdef DEBUG
+  if(1){
     cout << "Subscription succeeded." << "\n";
-  #endif
+  }
   return;
 }
 
@@ -45,33 +43,33 @@ void mqtt_client::on_message(const struct mosquitto_message *message)
 
     buff.copy(reinterpret_cast<char*>(message->payload),size_t(message->payloadlen),0);
 
-    #ifdef DEBUG
+    if(1){
       cout << buff.c_str() << "\n";
-    #endif
+    }
 
     // Examples of messages for M2M communications...
     if (!strcmp(buff.c_str(), "STATUS")){
       buff = "This is a Status Message...";
       publish(nullptr, PUBLISH_TOPIC.c_str(), static_cast<int>(buff.size()), buff.c_str());
-      #ifdef DEBUG
+      if(1){
         cout << "Status Request Recieved." << "\n";
-      #endif
+      }
     }
 
     if (!strcmp(buff.c_str(), "ON")){
       buff = "Turning on...";
       publish(nullptr, PUBLISH_TOPIC.c_str(), static_cast<int>(buff.size()), buff.c_str());
-      #ifdef DEBUG
+      if(1){
         cout << "Request to turn on." << "\n";
-      #endif
+      }
     }
 
     if (!strcmp(buff.c_str(), "OFF")){
       buff = "Turning off...";
       publish(nullptr, PUBLISH_TOPIC.c_str(), static_cast<int>(buff.size()), buff.c_str());
-      #ifdef DEBUG
+      if(1){
         cout << "Request to turn off." << std:: endl;
-      #endif
+      }
     }
   }
   return;
