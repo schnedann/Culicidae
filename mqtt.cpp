@@ -15,9 +15,10 @@ string const mqtt_client::mqtt_client::PUBLISH_TOPIC = "EXAMPLE_TOPIC";
  * @param host
  * @param port
  */
-mqtt_client::mqtt_client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()){
-  int keepalive = static_cast<int>(DEFAULT_KEEP_ALIVE);
-  connect(host, port, keepalive);
+mqtt_client::mqtt_client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()),last_err(0),connected(false){
+  if(mqtt_errors::SUCCESS == static_cast<mqtt_errors>(connect(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE)))){
+    connected = true;
+  }
   return;
 }
 
@@ -26,10 +27,8 @@ mqtt_client::mqtt_client(string const& id, string const& host, uint16_t port) : 
  * @param rc
  */
 void mqtt_client::on_connect(int rc){
-  if (!rc){
-    if(true){
-      cout << "Connected - code " << rc << "\n";
-    }
+  if(true){
+    cout << "Connected - code " << rc << "\n";
   }
   return;
 }
@@ -41,8 +40,13 @@ void mqtt_client::on_connect(int rc){
  * @param granted_qos
  */
 void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
-  if(true){
+  if(false){
     cout << "Subscription succeeded." << "\n";
+    cout << " -> Message ID        : " << mid << "\n";
+    cout << " -> Quality of Service of subscriptions - " << qos_count << "\n";
+    for(size_t ii=0; ii<static_cast<size_t>(qos_count); ++ii){
+      cout << "   -> [" << ii << "]: " << granted_qos[ii] << "\n";
+    }
   }
   return;
 }
@@ -87,6 +91,14 @@ void mqtt_client::on_message(const mosquitto_message &message){
         cout << "Request to turn off." << std:: endl;
       }
     }
+  }
+  return;
+}
+
+void mqtt_client::on_publish(int mid){
+  if(true){
+    cout << "Publishing succeeded." << "\n";
+    cout << " -> Message ID: " << mid << "\n";
   }
   return;
 }

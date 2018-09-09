@@ -18,7 +18,6 @@ constexpr static uint16_t const MQTT_SECUREWEBS_PORT = 443;
 
 int main(int argc, char *argv[]){
   class mqtt_client *iot_client;
-  int rc;
 
   mosqpp::lib_init();
 
@@ -33,11 +32,18 @@ int main(int argc, char *argv[]){
 
   uint32_t cnt = 0;
   while(true){
-    rc = iot_client->loop(50000,10);
-    if(rc){
+    mqtt_errors rc = static_cast<mqtt_errors>(iot_client->loop(50000,10));
+    if(mqtt_errors::SUCCESS != rc){
       iot_client->reconnect();
     }else{
       iot_client->subscribe(nullptr, MQTT_TOPIC.c_str());
+
+      int mid = 666;
+      string payload = "STATUS";
+      iot_client->publish(nullptr,
+                          MQTT_TOPIC,
+                          payload.size(),
+                          reinterpret_cast<const void *>(payload.data()));
     }
     if(1000000<cnt++) break;
   }
