@@ -66,7 +66,7 @@ void mqtt_client::on_connect(int rc){
  * @param granted_qos
  */
 void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
-  if(false){
+  if(true){
     cout << "Subscription succeeded." << "\n";
     cout << " -> Message ID        : " << mid << "\n";
     cout << " -> Quality of Service of subscriptions - " << qos_count << "\n";
@@ -124,7 +124,7 @@ void mqtt_client::on_message(struct mosquitto_message const* message){
 }
 
 void mqtt_client::on_publish(int mid){
-  if(false){
+  if(true){
     cout << "Publishing succeeded." << "\n";
     cout << " -> Message ID: " << mid << "\n";
   }
