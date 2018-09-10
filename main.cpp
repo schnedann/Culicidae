@@ -83,7 +83,7 @@ int main(int argc, char *argv[]){
           string payload1 = "STATUS";
           rc = iot_client->publish(nullptr,
                                    MQTT_TOPIC,
-                                   static_cast<int>(payload1.size()),
+                                   static_cast<int>(payload1.size()+1),
                                    reinterpret_cast<const void *>(payload1.data()));
           iot_client->set_last_err(rc);
         }else{
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
           string payload2 = "ON";
           rc = iot_client->publish(nullptr,
                                    MQTT_TOPIC,
-                                   static_cast<int>(payload2.size()),
+                                   static_cast<int>(payload2.size()+1),
                                    reinterpret_cast<const void *>(payload2.data()));
           iot_client->set_last_err(rc);
         }else{
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]){
           string payload3 = "OFF";
           rc = iot_client->publish(nullptr,
                                    MQTT_TOPIC,
-                                   static_cast<int>(payload3.size()),
+                                   static_cast<int>(payload3.size()+1),
                                    reinterpret_cast<const void *>(payload3.data()));
           iot_client->set_last_err(rc);
         }else{

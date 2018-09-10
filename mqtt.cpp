@@ -83,11 +83,13 @@ void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
  */
 void mqtt_client::on_message(struct mosquitto_message const* message){
   string buff;
-  buff.reserve(MAX_PAYLOAD);
+  //buff.reserve(MAX_PAYLOAD);
 
   if(0==PUBLISH_TOPIC.compare(message->topic)){
 
-    buff.copy(reinterpret_cast<char*>(message->payload),size_t(message->payloadlen),0);
+    char const* cptr = reinterpret_cast<char const*>(message->payload);
+    size_t const count = size_t(message->payloadlen);
+    buff.insert(0,cptr,count);
 
     if(true){
       cout << "[" << message->payloadlen << "] -" << buff.c_str() << "\n";
