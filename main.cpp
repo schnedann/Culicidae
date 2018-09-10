@@ -1,6 +1,10 @@
+#include <iostream>
 #include <string>
 #include <cstring>
 #include <cstdint>
+
+#include <sys/resource.h>
+
 #include "mqtt.h"
 
 using namespace std;
@@ -16,40 +20,101 @@ constexpr static uint16_t const MQTT_WEBSOCKS_PORT   = 80;
 constexpr static uint16_t const MQTT_SECUREWEBS_PORT = 443;
           static string const   MQTT_TOPIC     = "EXAMPLE_TOPIC";
 
+void ressource_usage(){
+  static struct rusage oldrinfo;
+  struct rusage rinfo;
+  if(0==getrusage(RUSAGE_SELF, &rinfo)){
+    if(rinfo.ru_maxrss != oldrinfo.ru_maxrss){
+      cout << "maximum resident set size    " << rinfo.ru_maxrss << " - " << (rinfo.ru_maxrss - oldrinfo.ru_maxrss) << "\n";
+    }
+
+    //cout << "-----------------------------------------------" << "\n";
+    /*cout << "integral shared memory size  " << rinfo.ru_ixrss << "\n";
+    cout << "integral unshared data size  " << rinfo.ru_idrss << "\n";
+    cout << "integral unshared stack size " << rinfo.ru_isrss << "\n";
+
+    cout << "messages sent                " << rinfo.ru_msgsnd << "\n";
+    cout << "messages received            " << rinfo.ru_msgrcv << "\n";
+    cout << "-----------------------------------------------" << "\n";*/
+
+    oldrinfo = rinfo;
+  }
+  return;
+}
+
 int main(int argc, char *argv[]){
   class mqtt_client *iot_client;
 
-  mosqpp::lib_init();
+  {
+    int version[3];
+    mosqpp::lib_version(&version[0],&version[1],&version[2]);
+    cout << "libmosquitto Version: " << version[0] << "." << version[1] << "." << version[2] << "\n";
+  }
 
+  mosqpp::lib_init();
   string host;
   if (argc > 1){
     host = string(argv[1]);
   }else{
     host = TEST_BROKER_01;
   }
+  {
+    iot_client = new mqtt_client(CLIENT_ID, host, MQTT_PORT);
+    int rc = iot_client->subscribe(nullptr, MQTT_TOPIC.c_str());
+    iot_client->set_last_err(rc);
+    uint32_t cnt = 0;
+    constexpr uint32_t const maxcnt = 1000000;
+    while(true){
+      rc = iot_client->loop(50000,10);
+      iot_client->set_last_err(rc);
 
-  iot_client = new mqtt_client(CLIENT_ID, host, MQTT_PORT);
+      if( iot_client->is_last_err()){
+        cout << iot_client->error_to_string() << "\n";
+        rc = iot_client->reconnect();
+        iot_client->set_last_err(rc);
+        if(iot_client->is_last_err()){
+          cout << "Reconnect Failed: " << iot_client->error_to_string() << "\n";
+        }
+      }else{
+        //rc = iot_client->subscribe(nullptr, MQTT_TOPIC.c_str());
+        //iot_client->set_last_err(rc);
 
-  uint32_t cnt = 0;
-  while(true){
-    mqtt_errors rc = static_cast<mqtt_errors>(iot_client->loop(50000,10));
-    if(mqtt_errors::SUCCESS != rc){
-      iot_client->reconnect();
-    }else{
-      iot_client->subscribe(nullptr, MQTT_TOPIC.c_str());
-
-      int mid = 666;
-      string payload = "STATUS";
-      iot_client->publish(nullptr,
-                          MQTT_TOPIC,
-                          payload.size(),
-                          reinterpret_cast<const void *>(payload.data()));
+        if(!iot_client->is_last_err()){
+          string payload1 = "STATUS";
+          rc = iot_client->publish(nullptr,
+                                   MQTT_TOPIC,
+                                   static_cast<int>(payload1.size()),
+                                   reinterpret_cast<const void *>(payload1.data()));
+          iot_client->set_last_err(rc);
+        }else{
+          cout << iot_client->error_to_string() << "\n";
+        }
+        if(!iot_client->is_last_err()){
+          string payload2 = "ON";
+          rc = iot_client->publish(nullptr,
+                                   MQTT_TOPIC,
+                                   static_cast<int>(payload2.size()),
+                                   reinterpret_cast<const void *>(payload2.data()));
+          iot_client->set_last_err(rc);
+        }else{
+          cout << iot_client->error_to_string() << "\n";
+        }
+        if(!iot_client->is_last_err()){
+          string payload3 = "OFF";
+          rc = iot_client->publish(nullptr,
+                                   MQTT_TOPIC,
+                                   static_cast<int>(payload3.size()),
+                                   reinterpret_cast<const void *>(payload3.data()));
+          iot_client->set_last_err(rc);
+        }else{
+          cout << iot_client->error_to_string() << "\n";
+        }
+      }
+      if(maxcnt<cnt++) break;
+      if((cnt%1000)==0) ressource_usage();
     }
-    if(1000000<cnt++) break;
+    delete iot_client;
   }
-
-  delete iot_client;
-
   mosqpp::lib_cleanup();
 
   return 0;

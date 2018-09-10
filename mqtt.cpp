@@ -15,18 +15,44 @@ string const mqtt_client::mqtt_client::PUBLISH_TOPIC = "EXAMPLE_TOPIC";
  * @param host
  * @param port
  */
-mqtt_client::mqtt_client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()),last_err(0),connected(false){
+mqtt_client::mqtt_client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()),last_err(mqtt_errors::SUCCESS),connected(false){
   if(mqtt_errors::SUCCESS == static_cast<mqtt_errors>(connect(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE)))){
     connected = true;
   }
   return;
 }
 
+//-----
+
+void mqtt_client::set_last_err(int rc){
+  last_err = static_cast<mqtt_errors>(rc);
+}
+
+mqtt_errors mqtt_client::get_last_err(){
+  return last_err;
+}
+
+bool mqtt_client::is_last_err(){
+  return (mqtt_errors::SUCCESS != last_err);
+}
+
+/**
+ * @brief mqtt_client::error_to_string
+ * @return
+ */
+string mqtt_client::error_to_string(){
+  string res = string(strerror(static_cast<int>(last_err)));
+  return res;
+}
+
+//-----
+
 /**
  * @brief mqtt_client::on_connect
  * @param rc
  */
 void mqtt_client::on_connect(int rc){
+  last_err = static_cast<mqtt_errors>(rc);
   if(true){
     cout << "Connected - code " << rc << "\n";
   }
@@ -55,16 +81,16 @@ void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
  * @brief mqtt_client::on_message
  * @param message
  */
-void mqtt_client::on_message(const mosquitto_message &message){
+void mqtt_client::on_message(struct mosquitto_message const* message){
   string buff;
   buff.reserve(MAX_PAYLOAD);
 
-  if(0==PUBLISH_TOPIC.compare(message.topic)){
+  if(0==PUBLISH_TOPIC.compare(message->topic)){
 
-    buff.copy(reinterpret_cast<char*>(message.payload),size_t(message.payloadlen),0);
+    buff.copy(reinterpret_cast<char*>(message->payload),size_t(message->payloadlen),0);
 
     if(true){
-      cout << buff.c_str() << "\n";
+      cout << "[" << message->payloadlen << "] -" << buff.c_str() << "\n";
     }
 
     // Examples of messages for M2M communications...
@@ -96,7 +122,7 @@ void mqtt_client::on_message(const mosquitto_message &message){
 }
 
 void mqtt_client::on_publish(int mid){
-  if(true){
+  if(false){
     cout << "Publishing succeeded." << "\n";
     cout << " -> Message ID: " << mid << "\n";
   }

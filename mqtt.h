@@ -35,7 +35,7 @@ enum class mqtt_errors:int{
 class mqtt_client : public mosqpp::mosquittopp
 {
 private:
-  int8_t last_err;
+  mqtt_errors last_err;
   bool connected;
 public:
 
@@ -46,9 +46,14 @@ public:
   mqtt_client (const std::string &id, const std::string &host, uint16_t port);
   ~mqtt_client()=default;
 
+  std::string error_to_string();
+  void set_last_err(int rc);
+  mqtt_errors get_last_err();
+  bool is_last_err();
+
   void on_connect(int rc);
   void on_subscribe(int mid, int qos_count, const int *granted_qos);
-  void on_message(struct mosquitto_message const& message);
+  void on_message(struct mosquitto_message const* message);
   void on_publish(int mid);
 
 };
