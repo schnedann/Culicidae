@@ -2,13 +2,19 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
-
+#include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/mman.h>
+#include <sched.h>
 
 #include "mqtt.h"
 
 using namespace std;
 
+constexpr static long   const NSEC_PER_SEC   = 1000000000;
+constexpr static size_t const INTERVAL       = 1000000000; //1000ms = 1s
+constexpr static size_t const MAX_SAFE_STACK = 8*1024;
+//-----
           static string const   TEST_BROKER_01 = "test.mosquitto.org";
           static string const   TEST_BROKER_02 = "iot.eclipse.org";
 
@@ -18,10 +24,11 @@ using namespace std;
           static string const   CLIENT_ID      = "Client_ID";
           static string const   BROKER_ADDRESS = "localhost";
 constexpr static uint16_t const MQTT_PORT            = 1883;
-constexpr static uint16_t const MQTT_SSL_PORT        = 8883;
-constexpr static uint16_t const MQTT_WEBSOCKS_PORT   = 80;
-constexpr static uint16_t const MQTT_SECUREWEBS_PORT = 443;
+//constexpr static uint16_t const MQTT_SSL_PORT        = 8883;
+//constexpr static uint16_t const MQTT_WEBSOCKS_PORT   = 80;
+//constexpr static uint16_t const MQTT_SECUREWEBS_PORT = 443;
           static string const   MQTT_TOPIC     = "EXAMPLE_TOPIC";
+//-----
 
 void ressource_usage(){
   static struct rusage oldrinfo;
@@ -45,8 +52,60 @@ void ressource_usage(){
   return;
 }
 
+/**
+ * Not understanding why this piece of code
+ * should reserve stack... as dummy only lives
+ * in the scope of stack_prefault()
+ *
+ * --> assume Code has no effect at last
+ */
+void stack_prefault(){
+  unsigned char dummy[MAX_SAFE_STACK];
+  memset(&dummy, 0, MAX_SAFE_STACK);
+  return;
+}
+
+/**
+ * correct time-struct on nanosecond overflow
+ */
+static void tsnorm(struct timespec& ts){
+  while (ts.tv_nsec >= NSEC_PER_SEC) {
+    ts.tv_nsec -= NSEC_PER_SEC;
+    ++ts.tv_sec;
+  }
+  return;
+}
+
 int main(int argc, char *argv[]){
-  class mqtt_client *iot_client;
+  int err = 0;
+  int rc = 0;
+  uint32_t errcnt = 0;
+  string host;
+  class mqtt_client* iot_client = nullptr;
+  /*
+   * Prepare a defined Cycle Time
+   */
+  struct timespec time;
+  struct sched_param param;
+  /* Declare ourself as a "real time" task */
+  { //set to 90% of max Priority
+    int const pmin = sched_get_priority_min(SCHED_FIFO);
+    int const pmax = sched_get_priority_max(SCHED_FIFO);
+    int const pdiff = ((pmax-pmin)*900000)/1000000;
+    param.sched_priority = pmin+pdiff;
+  }
+  if(sched_setscheduler(0, SCHED_FIFO, &param) == -1){
+    err=-1;
+    goto lERR;
+  }
+  /* Lock memory */
+  if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1){
+    err=-2;
+    goto lERR;
+  }
+  /* Stack reservieren */
+  stack_prefault();                   //?
+  clock_gettime(CLOCK_MONOTONIC, &time); //Guess CLOCK_PROCESS_CPUTIME_ID should work alike...
 
   {
     int version[3];
@@ -55,17 +114,14 @@ int main(int argc, char *argv[]){
   }
 
   mosqpp::lib_init();
-  string host;
+
   if (argc > 1){
     host = string(argv[1]);
   }else{
-    host = TEST_BROKER_01;
+    host = TEST_BROKER_02;
   }
   {
-    uint32_t errcnt = 0;
-
     iot_client = new mqtt_client(CLIENT_ID, host, MQTT_PORT);
-    int rc = 0;
     if(CLIENT_is_SUBSCRIBER){
       rc = iot_client->subscribe(nullptr, MQTT_TOPIC.c_str());
       iot_client->set_last_err(rc);
@@ -78,60 +134,68 @@ int main(int argc, char *argv[]){
       uint32_t cnt = 0;
       constexpr uint32_t const maxcnt = 1000000;
       while(true){
-        rc = iot_client->loop(1000,1);
-        iot_client->set_last_err(rc);
-        if(iot_client->is_last_err()){
-          cout << errcnt++ << " - Loop Error: "<< iot_client->error_to_string() << "\n";
-
-          rc = iot_client->reconnect();
+        { //Do Work
+          rc = iot_client->loop(25,1);
           iot_client->set_last_err(rc);
           if(iot_client->is_last_err()){
-            cout << errcnt++ << " - Reconnect Failed: " << iot_client->error_to_string() << "\n";
+            cout << errcnt++ << " - Loop Error: "<< iot_client->error_to_string() << "\n";
+
+            rc = iot_client->reconnect();
+            iot_client->set_last_err(rc);
+            if(iot_client->is_last_err()){
+              cout << errcnt++ << " - Reconnect Failed: " << iot_client->error_to_string() << "\n";
+            }
           }
+
+          if(CLIENT_is_PUBLISHER){
+            if(!iot_client->is_last_err()){
+              string payload1 = "STATUS";
+              rc = iot_client->publish(nullptr,
+                                       MQTT_TOPIC,
+                                       static_cast<int>(payload1.size()+1),
+                                       reinterpret_cast<const void *>(payload1.data()));
+              iot_client->set_last_err(rc);
+            }else{
+              cout << errcnt++ << " - not Published 1: " << iot_client->error_to_string() << "\n";
+              iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
+            }
+            if(!iot_client->is_last_err()){
+              string payload2 = "ON";
+              rc = iot_client->publish(nullptr,
+                                       MQTT_TOPIC,
+                                       static_cast<int>(payload2.size()+1),
+                                       reinterpret_cast<const void *>(payload2.data()));
+              iot_client->set_last_err(rc);
+            }else{
+              cout << errcnt++ << " - not Published 2: " << iot_client->error_to_string() << "\n";
+              iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
+            }
+            if(!iot_client->is_last_err()){
+              string payload3 = "OFF";
+              rc = iot_client->publish(nullptr,
+                                       MQTT_TOPIC,
+                                       static_cast<int>(payload3.size()+1),
+                                       reinterpret_cast<const void *>(payload3.data()));
+              iot_client->set_last_err(rc);
+            }else{
+              cout << errcnt++ << " - not Published 3: " << iot_client->error_to_string() << "\n";
+              iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
+            }
+          }
+          if(maxcnt<cnt++) break;
+          if((cnt%1000)==0) ressource_usage();
         }
 
-        if(CLIENT_is_PUBLISHER){
-          if(!iot_client->is_last_err()){
-            string payload1 = "STATUS";
-            rc = iot_client->publish(nullptr,
-                                     MQTT_TOPIC,
-                                     static_cast<int>(payload1.size()+1),
-                                     reinterpret_cast<const void *>(payload1.data()));
-            iot_client->set_last_err(rc);
-          }else{
-            cout << errcnt++ << " - not Published 1: " << iot_client->error_to_string() << "\n";
-            iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
-          }
-          if(!iot_client->is_last_err()){
-            string payload2 = "ON";
-            rc = iot_client->publish(nullptr,
-                                     MQTT_TOPIC,
-                                     static_cast<int>(payload2.size()+1),
-                                     reinterpret_cast<const void *>(payload2.data()));
-            iot_client->set_last_err(rc);
-          }else{
-            cout << errcnt++ << " - not Published 2: " << iot_client->error_to_string() << "\n";
-            iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
-          }
-          if(!iot_client->is_last_err()){
-            string payload3 = "OFF";
-            rc = iot_client->publish(nullptr,
-                                     MQTT_TOPIC,
-                                     static_cast<int>(payload3.size()+1),
-                                     reinterpret_cast<const void *>(payload3.data()));
-            iot_client->set_last_err(rc);
-          }else{
-            cout << errcnt++ << " - not Published 3: " << iot_client->error_to_string() << "\n";
-            iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
-          }
-        }
-        if(maxcnt<cnt++) break;
-        if((cnt%1000)==0) ressource_usage();
+        //Cycle Time
+        time.tv_nsec += INTERVAL; //Set next Wakeup Time
+        tsnorm(time);             //Overflow handling
+        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
       }
     }
 
     cout << "Error-Count: " << errcnt << "\n";
-
+lERR:
+  if(err) cout << "Err: " << err << "\n";
     delete iot_client;
   }
   mosqpp::lib_cleanup();
