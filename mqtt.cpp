@@ -41,8 +41,7 @@ bool mqtt_client::is_last_err(){
  * @return
  */
 string mqtt_client::error_to_string(){
-  string res = string(strerror(static_cast<int>(last_err)));
-  return res;
+  return mosqpp::strerror(static_cast<int>(last_err));
 }
 
 //-----
@@ -54,7 +53,7 @@ string mqtt_client::error_to_string(){
 void mqtt_client::on_connect(int rc){
   last_err = static_cast<mqtt_errors>(rc);
   if(true){
-    cout << "Connected - code " << rc << "\n";
+    cout << "Connected - code " << rc << " - " << mosqpp::connack_string(rc) << "\n";
   }
   return;
 }
