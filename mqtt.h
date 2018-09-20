@@ -7,7 +7,9 @@
 
 #include <mosquittopp.h>
 
-enum class mqtt_errors:int{
+namespace mqtt {
+
+enum class errors:int{
   CONN_PENDING   = MOSQ_ERR_CONN_PENDING   ,
   SUCCESS        = MOSQ_ERR_SUCCESS        ,
   NOMEM          = MOSQ_ERR_NOMEM          ,
@@ -32,10 +34,9 @@ enum class mqtt_errors:int{
   LOOKUP         = MOSQ_ERR_LOOKUP
 };
 
-class mqtt_client : public mosqpp::mosquittopp
-{
+class client : public mosqpp::mosquittopp{
 private:
-  mqtt_errors last_err;
+  errors last_err;
   bool connected;
 public:
 
@@ -43,12 +44,15 @@ public:
   constexpr static uint16_t const DEFAULT_KEEP_ALIVE = 60;
   static std::string const PUBLISH_TOPIC;
 
-  mqtt_client (const std::string &id, const std::string &host, uint16_t port);
-  ~mqtt_client()=default;
+  client (const std::string &id, const std::string &host, uint16_t port);
+  ~client()=default;
+
+  void do_subscribe(std::string const& topic);
+  void do_publish(std::string const& topic, std::string const& payload);
 
   std::string error_to_string();
   void set_last_err(int rc);
-  mqtt_errors get_last_err();
+  errors get_last_err();
   bool is_last_err();
 
   //---
@@ -64,5 +68,7 @@ public:
   void on_error();
 
 };
+
+} //namespace
 
 #endif //SIMPLECLIENT_MQTT_H

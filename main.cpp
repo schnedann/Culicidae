@@ -133,10 +133,9 @@ int main(int argc, char *argv[]){
     host = TEST_BROKER_01;
   }
   {
-    mqtt_client iot_client = mqtt_client(CLIENT_ID, host, MQTT_PORT);
+    mqtt::client iot_client = mqtt::client(CLIENT_ID, host, MQTT_PORT);
     if(CLIENT_is_SUBSCRIBER){
-      rc = iot_client.subscribe(nullptr, MQTT_TOPIC.c_str());
-      iot_client.set_last_err(rc);
+      iot_client.do_subscribe(MQTT_TOPIC);
       if(iot_client.is_last_err()){
         cout << errcnt++ << " - Subscribe Error: "<< iot_client.error_to_string() << "\n";
       }
@@ -147,12 +146,10 @@ int main(int argc, char *argv[]){
       while(true){
         { //Do Work
           rc = iot_client.loop(25,1);
-          iot_client.set_last_err(rc);
           if(iot_client.is_last_err()){
             cout << errcnt++ << " - Loop Error: "<< iot_client.error_to_string() << "\n";
 
             rc = iot_client.reconnect();
-            iot_client.set_last_err(rc);
             if(iot_client.is_last_err()){
               cout << errcnt++ << " - Reconnect Failed: " << iot_client.error_to_string() << "\n";
             }
@@ -161,36 +158,21 @@ int main(int argc, char *argv[]){
           if(CLIENT_is_PUBLISHER){
             if(!iot_client.is_last_err()){
               string payload1 = "STATUS";
-              rc = iot_client.publish(nullptr,
-                                       MQTT_TOPIC,
-                                       static_cast<int>(payload1.size()+1),
-                                       reinterpret_cast<const void *>(payload1.data()));
-              iot_client.set_last_err(rc);
+              iot_client.do_publish(MQTT_TOPIC,payload1);
             }else{
               cout << errcnt++ << " - not Published 1: " << iot_client.error_to_string() << "\n";
-              iot_client.set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
             }
             if(!iot_client.is_last_err()){
               string payload2 = "ON";
-              rc = iot_client.publish(nullptr,
-                                       MQTT_TOPIC,
-                                       static_cast<int>(payload2.size()+1),
-                                       reinterpret_cast<const void *>(payload2.data()));
-              iot_client.set_last_err(rc);
+              iot_client.do_publish(MQTT_TOPIC,payload2);
             }else{
               cout << errcnt++ << " - not Published 2: " << iot_client.error_to_string() << "\n";
-              iot_client.set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
             }
             if(!iot_client.is_last_err()){
               string payload3 = "OFF";
-              rc = iot_client.publish(nullptr,
-                                       MQTT_TOPIC,
-                                       static_cast<int>(payload3.size()+1),
-                                       reinterpret_cast<const void *>(payload3.data()));
-              iot_client.set_last_err(rc);
+              iot_client.do_publish(MQTT_TOPIC,payload3);
             }else{
               cout << errcnt++ << " - not Published 3: " << iot_client.error_to_string() << "\n";
-              iot_client.set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
             }
           }
 

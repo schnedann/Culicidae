@@ -7,16 +7,16 @@
 
 using namespace std;
 
-string const mqtt_client::mqtt_client::PUBLISH_TOPIC = "EXAMPLE_TOPIC";
+string const mqtt::client::PUBLISH_TOPIC = "EXAMPLE_TOPIC";
 
 /**
- * @brief mqtt_client::mqtt_client
+ * @brief mqtt::client
  * @param id
  * @param host
  * @param port
  */
-mqtt_client::mqtt_client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()),last_err(mqtt_errors::SUCCESS),connected(false){
-  if(mqtt_errors::SUCCESS == static_cast<mqtt_errors>(connect(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE)))){
+mqtt::client::client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()),last_err(mqtt::errors::UNKNOWN),connected(false){
+  if(mqtt::errors::SUCCESS == static_cast<mqtt::errors>(connect(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE)))){
     connected = true;
   }
   return;
@@ -24,23 +24,39 @@ mqtt_client::mqtt_client(string const& id, string const& host, uint16_t port) : 
 
 //-----
 
-void mqtt_client::set_last_err(int rc){
-  last_err = static_cast<mqtt_errors>(rc);
+void mqtt::client::do_subscribe(string const& topic){
+  int rc = subscribe(nullptr, topic);;
+  last_err = static_cast<mqtt::errors>(rc);
+  return;
 }
 
-mqtt_errors mqtt_client::get_last_err(){
+void mqtt::client::do_publish(string const& topic, string const& payload){
+  int rc = publish(nullptr,topic,
+                   static_cast<int>(payload.size()+1),
+                   reinterpret_cast<const void *>(payload.data()));
+  last_err = static_cast<mqtt::errors>(rc);
+  return;
+}
+
+//-----
+
+void mqtt::client::set_last_err(int rc){
+  last_err = static_cast<mqtt::errors>(rc);
+}
+
+mqtt::errors mqtt::client::get_last_err(){
   return last_err;
 }
 
-bool mqtt_client::is_last_err(){
-  return (mqtt_errors::SUCCESS != last_err);
+bool mqtt::client::is_last_err(){
+  return (mqtt::errors::SUCCESS != last_err);
 }
 
 /**
- * @brief mqtt_client::error_to_string
+ * @brief mqtt::client::error_to_string
  * @return
  */
-string mqtt_client::error_to_string(){
+string mqtt::client::error_to_string(){
   return mosqpp::strerror(static_cast<int>(last_err));
 }
 
@@ -51,26 +67,30 @@ string mqtt_client::error_to_string(){
 //-----
 
 /**
- * @brief mqtt_client::on_connect
+ * @brief mqtt::client::on_connect
  * @param rc
  */
-void mqtt_client::on_connect(int rc){
-  last_err = static_cast<mqtt_errors>(rc);
+void mqtt::client::on_connect(int rc){
+  last_err = static_cast<mqtt::errors>(rc);
   if(true){
     cout << "Connected - code " << rc << " - " << mosqpp::connack_string(rc) << "\n";
   }
   return;
 }
 
-void mqtt_client::on_connect_with_flags(int rc, int flags){
+void mqtt::client::on_connect_with_flags(int rc, int flags){
+  last_err = static_cast<mqtt::errors>(rc);
+  cout << strerror(rc) << "\n";
+  cout << flags << "\n";
   return;
 }
 
-void mqtt_client::on_disconnect(int rc){
+void mqtt::client::on_disconnect(int rc){
+  last_err = static_cast<mqtt::errors>(rc);
   return;
 }
 
-void mqtt_client::on_publish(int mid){
+void mqtt::client::on_publish(int mid){
   if(true){
     cout << "Publishing succeeded." << "\n";
     cout << " -> Message ID: " << mid << "\n";
@@ -78,12 +98,11 @@ void mqtt_client::on_publish(int mid){
   return;
 }
 
-
 /**
- * @brief mqtt_client::on_message
+ * @brief mqtt::client::on_message
  * @param message
  */
-void mqtt_client::on_message(struct mosquitto_message const* message){
+void mqtt::client::on_message(struct mosquitto_message const* message){
   string buff;
   //buff.reserve(MAX_PAYLOAD);
 
@@ -126,12 +145,12 @@ void mqtt_client::on_message(struct mosquitto_message const* message){
 }
 
 /**
- * @brief mqtt_client::on_subscribe
+ * @brief mqtt::client::on_subscribe
  * @param mid
  * @param qos_count
  * @param granted_qos
  */
-void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
+void mqtt::client::on_subscribe(int mid, int qos_count, const int *granted_qos){
   if(true){
     cout << "Subscription succeeded." << "\n";
     cout << " -> Message ID        : " << mid << "\n";
@@ -143,14 +162,21 @@ void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
   return;
 }
 
-void mqtt_client::on_unsubscribe(int mid){
+void mqtt::client::on_unsubscribe(int mid){
+  cout << "Unsubscribe" << "\n";
+  cout << " -> Message ID: " << mid << "\n";
   return;
 }
 
-void mqtt_client::on_log(int level, std::string const& str){
+void mqtt::client::on_log(int level, std::string const& str){
+  if(false){
+    cout << "Log[" << level << "]: " << str << "\n";
+  }
   return;
 }
 
-void mqtt_client::on_error(){
+void mqtt::client::on_error(){
+  last_err = mqtt::errors::UNKNOWN;
+  cout << "!!!Error!!!" << "\n";
   return;
 }
