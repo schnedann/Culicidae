@@ -2,6 +2,7 @@
 #include <string>
 #include <cstring>
 #include <cstdint>
+#include <ctime>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
@@ -11,8 +12,13 @@
 
 using namespace std;
 
+constexpr static bool   const USE_RTCYCLE   = false;
+constexpr static uint32_t const MAX_CYCLES  = 5000;
+
+
 constexpr static long   const NSEC_PER_SEC   = 1000000000;
-constexpr static size_t const INTERVAL       = 1000000000; //1000ms = 1s
+//                                            ssmmmuuunnn
+constexpr static size_t const INTERVAL       = 1000000000; //1000ms = 1.0s
 constexpr static size_t const MAX_SAFE_STACK = 8*1024;
 //-----
           static string const   TEST_BROKER_01 = "test.mosquitto.org";
@@ -81,31 +87,37 @@ int main(int argc, char *argv[]){
   int rc = 0;
   uint32_t errcnt = 0;
   string host;
-  class mqtt_client* iot_client = nullptr;
+
   /*
    * Prepare a defined Cycle Time
    */
   struct timespec time;
   struct sched_param param;
-  /* Declare ourself as a "real time" task */
-  { //set to 90% of max Priority
-    int const pmin = sched_get_priority_min(SCHED_FIFO);
-    int const pmax = sched_get_priority_max(SCHED_FIFO);
-    int const pdiff = ((pmax-pmin)*900000)/1000000;
-    param.sched_priority = pmin+pdiff;
+
+  time.tv_sec  = INTERVAL/NSEC_PER_SEC;
+  time.tv_nsec = INTERVAL%NSEC_PER_SEC;
+
+  if(USE_RTCYCLE){
+    /* Declare ourself as a "real time" task */
+    { //set to 90% of max Priority
+      int const pmin = sched_get_priority_min(SCHED_FIFO);
+      int const pmax = sched_get_priority_max(SCHED_FIFO);
+      int const pdiff = ((pmax-pmin)*900000)/1000000;
+      param.sched_priority = pmin+pdiff;
+    }
+    if(sched_setscheduler(0, SCHED_FIFO, &param) == -1){
+      err=-1;
+      goto lERR;
+    }
+    /* Lock memory */
+    if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1){
+      err=-2;
+      goto lERR;
+    }
+    /* Stack reservieren */
+    stack_prefault();                   //?
+    clock_gettime(CLOCK_MONOTONIC, &time); //Guess CLOCK_PROCESS_CPUTIME_ID should work alike...
   }
-  if(sched_setscheduler(0, SCHED_FIFO, &param) == -1){
-    err=-1;
-    goto lERR;
-  }
-  /* Lock memory */
-  if(mlockall(MCL_CURRENT|MCL_FUTURE) == -1){
-    err=-2;
-    goto lERR;
-  }
-  /* Stack reservieren */
-  stack_prefault();                   //?
-  clock_gettime(CLOCK_MONOTONIC, &time); //Guess CLOCK_PROCESS_CPUTIME_ID should work alike...
 
   {
     int version[3];
@@ -118,88 +130,98 @@ int main(int argc, char *argv[]){
   if (argc > 1){
     host = string(argv[1]);
   }else{
-    host = TEST_BROKER_02;
+    host = TEST_BROKER_01;
   }
   {
-    iot_client = new mqtt_client(CLIENT_ID, host, MQTT_PORT);
+    mqtt_client iot_client = mqtt_client(CLIENT_ID, host, MQTT_PORT);
     if(CLIENT_is_SUBSCRIBER){
-      rc = iot_client->subscribe(nullptr, MQTT_TOPIC.c_str());
-      iot_client->set_last_err(rc);
-      if(iot_client->is_last_err()){
-        cout << errcnt++ << " - Subscribe Error: "<< iot_client->error_to_string() << "\n";
+      rc = iot_client.subscribe(nullptr, MQTT_TOPIC.c_str());
+      iot_client.set_last_err(rc);
+      if(iot_client.is_last_err()){
+        cout << errcnt++ << " - Subscribe Error: "<< iot_client.error_to_string() << "\n";
       }
     }
 
-    if(!iot_client->is_last_err()){
+    if(!iot_client.is_last_err()){
       uint32_t cnt = 0;
-      constexpr uint32_t const maxcnt = 1000000;
       while(true){
         { //Do Work
-          rc = iot_client->loop(25,1);
-          iot_client->set_last_err(rc);
-          if(iot_client->is_last_err()){
-            cout << errcnt++ << " - Loop Error: "<< iot_client->error_to_string() << "\n";
+          rc = iot_client.loop(25,1);
+          iot_client.set_last_err(rc);
+          if(iot_client.is_last_err()){
+            cout << errcnt++ << " - Loop Error: "<< iot_client.error_to_string() << "\n";
 
-            rc = iot_client->reconnect();
-            iot_client->set_last_err(rc);
-            if(iot_client->is_last_err()){
-              cout << errcnt++ << " - Reconnect Failed: " << iot_client->error_to_string() << "\n";
+            rc = iot_client.reconnect();
+            iot_client.set_last_err(rc);
+            if(iot_client.is_last_err()){
+              cout << errcnt++ << " - Reconnect Failed: " << iot_client.error_to_string() << "\n";
             }
           }
 
           if(CLIENT_is_PUBLISHER){
-            if(!iot_client->is_last_err()){
+            if(!iot_client.is_last_err()){
               string payload1 = "STATUS";
-              rc = iot_client->publish(nullptr,
+              rc = iot_client.publish(nullptr,
                                        MQTT_TOPIC,
                                        static_cast<int>(payload1.size()+1),
                                        reinterpret_cast<const void *>(payload1.data()));
-              iot_client->set_last_err(rc);
+              iot_client.set_last_err(rc);
             }else{
-              cout << errcnt++ << " - not Published 1: " << iot_client->error_to_string() << "\n";
-              iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
+              cout << errcnt++ << " - not Published 1: " << iot_client.error_to_string() << "\n";
+              iot_client.set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
             }
-            if(!iot_client->is_last_err()){
+            if(!iot_client.is_last_err()){
               string payload2 = "ON";
-              rc = iot_client->publish(nullptr,
+              rc = iot_client.publish(nullptr,
                                        MQTT_TOPIC,
                                        static_cast<int>(payload2.size()+1),
                                        reinterpret_cast<const void *>(payload2.data()));
-              iot_client->set_last_err(rc);
+              iot_client.set_last_err(rc);
             }else{
-              cout << errcnt++ << " - not Published 2: " << iot_client->error_to_string() << "\n";
-              iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
+              cout << errcnt++ << " - not Published 2: " << iot_client.error_to_string() << "\n";
+              iot_client.set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
             }
-            if(!iot_client->is_last_err()){
+            if(!iot_client.is_last_err()){
               string payload3 = "OFF";
-              rc = iot_client->publish(nullptr,
+              rc = iot_client.publish(nullptr,
                                        MQTT_TOPIC,
                                        static_cast<int>(payload3.size()+1),
                                        reinterpret_cast<const void *>(payload3.data()));
-              iot_client->set_last_err(rc);
+              iot_client.set_last_err(rc);
             }else{
-              cout << errcnt++ << " - not Published 3: " << iot_client->error_to_string() << "\n";
-              iot_client->set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
+              cout << errcnt++ << " - not Published 3: " << iot_client.error_to_string() << "\n";
+              iot_client.set_last_err(static_cast<int>(mqtt_errors::SUCCESS));
             }
           }
-          if(maxcnt<cnt++) break;
+
+        } //work
+
+        { //Maximum Cycles
+          if(MAX_CYCLES<cnt++) break;
           if((cnt%1000)==0) ressource_usage();
         }
 
-        //Cycle Time
-        time.tv_nsec += INTERVAL; //Set next Wakeup Time
-        tsnorm(time);             //Overflow handling
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
-      }
+        { //Cycle Control
+          if(USE_RTCYCLE){
+            //Cycle Time
+            time.tv_nsec += INTERVAL; //Set next Wakeup Time
+            tsnorm(time);             //Overflow handling
+            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &time, nullptr);
+          }else{
+            nanosleep(&time,nullptr);
+          }
+        }
+      } //while
     }
 
     cout << "Error-Count: " << errcnt << "\n";
+  }
+
+
 lERR:
   if(err) cout << "Err: " << err << "\n";
-    delete iot_client;
-  }
-  mosqpp::lib_cleanup();
 
+  mosqpp::lib_cleanup();
   return 0;
 }
 
