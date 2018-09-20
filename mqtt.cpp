@@ -15,21 +15,40 @@ string const mqtt::client::PUBLISH_TOPIC = "EXAMPLE_TOPIC";
  * @param host
  * @param port
  */
-mqtt::client::client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()),last_err(mqtt::errors::UNKNOWN),connected(false){
-  int rc = connect(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE));
-  last_err = static_cast<mqtt::errors>(rc);
-  if(mqtt::errors::SUCCESS == last_err){
-    connected = true;
+mqtt::client::client(string const& id, string const& host, uint16_t port, bool aapi):
+  mosquittopp(id.c_str()),asyncapi(aapi),last_err(mqtt::errors::UNKNOWN),connected(false){
+  int rc;
+  if(asyncapi){
+    rc = connect_async(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE));
+    last_err = static_cast<mqtt::errors>(rc);
+    if(mqtt::errors::SUCCESS == last_err){
+      connected = true;
+      rc = loop_start();
+      last_err = static_cast<mqtt::errors>(rc);
+      if(mqtt::errors::SUCCESS == last_err){
+//Todo Disconnect
+      }
+    }
+  }else{
+    rc = connect(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE));
+    last_err = static_cast<mqtt::errors>(rc);
+    if(mqtt::errors::SUCCESS == last_err){
+      connected = true;
+    }
   }
   return;
 }
 
+/**
+ * @brief mqtt::client::~client
+ */
 mqtt::client::~client()
 {
   int rc;
   for(string topic:subscribed_to){
     rc = unsubscribe(nullptr,topic);
   }
+  if(asyncapi) loop_stop();
   rc = disconnect();
   last_err = static_cast<mqtt::errors>(rc);
   if(mqtt::errors::SUCCESS == last_err){
@@ -45,10 +64,12 @@ mqtt::client::~client()
  * @param topic
  */
 void mqtt::client::do_subscribe(string const& topic){
-  int rc = subscribe(nullptr, topic);;
-  last_err = static_cast<mqtt::errors>(rc);
-  if(mqtt::errors::SUCCESS == last_err){
-    subscribed_to.push_back(topic);
+  if(connected){
+    int rc = subscribe(nullptr, topic);;
+    last_err = static_cast<mqtt::errors>(rc);
+    if(mqtt::errors::SUCCESS == last_err){
+      subscribed_to.push_back(topic);
+    }
   }
   return;
 }
@@ -59,10 +80,12 @@ void mqtt::client::do_subscribe(string const& topic){
  * @param payload
  */
 void mqtt::client::do_publish(string const& topic, string const& payload){
-  int rc = publish(nullptr,topic,
-                   static_cast<int>(payload.size()+1),
-                   reinterpret_cast<const void *>(payload.data()));
-  last_err = static_cast<mqtt::errors>(rc);
+  if(connected){
+    int rc = publish(nullptr,topic,
+                     static_cast<int>(payload.size()+1),
+                     reinterpret_cast<const void *>(payload.data()));
+    last_err = static_cast<mqtt::errors>(rc);
+  }
   return;
 }
 
@@ -70,8 +93,10 @@ void mqtt::client::do_publish(string const& topic, string const& payload){
  * @brief mqtt::client::do_reconnect
  */
 void mqtt::client::do_reconnect(){
-  int rc = reconnect();
-  last_err = static_cast<mqtt::errors>(rc);
+  if(connected){
+    int rc = reconnect();
+    last_err = static_cast<mqtt::errors>(rc);
+  }
   return;
 }
 
@@ -80,8 +105,10 @@ void mqtt::client::do_reconnect(){
  * @param milliseconds
  */
 void mqtt::client::do_loop(uint32_t milliseconds){
-  int rc = loop(int(milliseconds),1);
-  last_err = static_cast<mqtt::errors>(rc);
+  if(!asyncapi){
+    int rc = loop(int(milliseconds),1);
+    last_err = static_cast<mqtt::errors>(rc);
+  }
   return;
 }
 

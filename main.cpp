@@ -12,6 +12,7 @@
 
 using namespace std;
 
+constexpr static bool   const USE_ASYNCAPI  = true;
 constexpr static bool   const USE_RTCYCLE   = false;
 constexpr static uint32_t const MAX_CYCLES  = 150;
 
@@ -132,7 +133,7 @@ int main(int argc, char *argv[]){
     host = TEST_BROKER_01;
   }
   {
-    mqtt::client iot_client = mqtt::client(CLIENT_ID, host, MQTT_PORT);
+    mqtt::client iot_client = mqtt::client(CLIENT_ID, host, MQTT_PORT, USE_ASYNCAPI);
     if(CLIENT_is_SUBSCRIBER){
       iot_client.do_subscribe(MQTT_TOPIC);
       if(iot_client.is_last_err()){

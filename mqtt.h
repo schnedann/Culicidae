@@ -37,6 +37,7 @@ enum class errors:int{
 
 class client : public mosqpp::mosquittopp{
 private:
+  bool asyncapi;
   errors last_err;
   bool connected;
 
@@ -48,7 +49,7 @@ public:
   constexpr static uint16_t const DEFAULT_KEEP_ALIVE = 60;
   static std::string const PUBLISH_TOPIC;
 
-  client (const std::string &id, const std::string &host, uint16_t port);
+  client (const std::string &id, const std::string &host, uint16_t port, bool aapi);
   ~client();
 
   void do_subscribe(std::string const& topic);
