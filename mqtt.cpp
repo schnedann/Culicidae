@@ -46,6 +46,10 @@ string mqtt_client::error_to_string(){
 
 //-----
 
+
+
+//-----
+
 /**
  * @brief mqtt_client::on_connect
  * @param rc
@@ -58,23 +62,22 @@ void mqtt_client::on_connect(int rc){
   return;
 }
 
-/**
- * @brief mqtt_client::on_subscribe
- * @param mid
- * @param qos_count
- * @param granted_qos
- */
-void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
+void mqtt_client::on_connect_with_flags(int rc, int flags){
+  return;
+}
+
+void mqtt_client::on_disconnect(int rc){
+  return;
+}
+
+void mqtt_client::on_publish(int mid){
   if(true){
-    cout << "Subscription succeeded." << "\n";
-    cout << " -> Message ID        : " << mid << "\n";
-    cout << " -> Quality of Service of subscriptions - " << qos_count << "\n";
-    for(size_t ii=0; ii<static_cast<size_t>(qos_count); ++ii){
-      cout << "   -> [" << ii << "]: " << granted_qos[ii] << "\n";
-    }
+    cout << "Publishing succeeded." << "\n";
+    cout << " -> Message ID: " << mid << "\n";
   }
   return;
 }
+
 
 /**
  * @brief mqtt_client::on_message
@@ -122,10 +125,32 @@ void mqtt_client::on_message(struct mosquitto_message const* message){
   return;
 }
 
-void mqtt_client::on_publish(int mid){
+/**
+ * @brief mqtt_client::on_subscribe
+ * @param mid
+ * @param qos_count
+ * @param granted_qos
+ */
+void mqtt_client::on_subscribe(int mid, int qos_count, const int *granted_qos){
   if(true){
-    cout << "Publishing succeeded." << "\n";
-    cout << " -> Message ID: " << mid << "\n";
+    cout << "Subscription succeeded." << "\n";
+    cout << " -> Message ID        : " << mid << "\n";
+    cout << " -> Quality of Service of subscriptions - " << qos_count << "\n";
+    for(size_t ii=0; ii<static_cast<size_t>(qos_count); ++ii){
+      cout << "   -> [" << ii << "]: " << granted_qos[ii] << "\n";
+    }
   }
+  return;
+}
+
+void mqtt_client::on_unsubscribe(int mid){
+  return;
+}
+
+void mqtt_client::on_log(int level, std::string const& str){
+  return;
+}
+
+void mqtt_client::on_error(){
   return;
 }

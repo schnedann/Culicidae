@@ -51,10 +51,17 @@ public:
   mqtt_errors get_last_err();
   bool is_last_err();
 
+  //---
+
   void on_connect(int rc);
-  void on_subscribe(int mid, int qos_count, const int *granted_qos);
-  void on_message(struct mosquitto_message const* message);
+  void on_connect_with_flags(int rc, int flags);
+  void on_disconnect(int rc);
   void on_publish(int mid);
+  void on_message(const struct mosquitto_message * message);
+  void on_subscribe(int mid, int qos_count, const int * granted_qos);
+  void on_unsubscribe(int mid);
+  void on_log(int level, std::string const& str);
+  void on_error();
 
 };
 
