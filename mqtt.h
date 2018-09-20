@@ -49,6 +49,8 @@ public:
 
   void do_subscribe(std::string const& topic);
   void do_publish(std::string const& topic, std::string const& payload);
+  void do_reconnect();
+  void do_loop(uint32_t milliseconds);
 
   std::string error_to_string();
   void set_last_err(int rc);

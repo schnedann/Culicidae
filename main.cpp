@@ -84,7 +84,6 @@ static void tsnorm(struct timespec& ts){
 
 int main(int argc, char *argv[]){
   int err = 0;
-  int rc = 0;
   uint32_t errcnt = 0;
   string host;
 
@@ -145,11 +144,12 @@ int main(int argc, char *argv[]){
       uint32_t cnt = 0;
       while(true){
         { //Do Work
-          rc = iot_client.loop(25,1);
+          //rc = iot_client.loop(25,1);
+          iot_client.do_loop(25);
           if(iot_client.is_last_err()){
             cout << errcnt++ << " - Loop Error: "<< iot_client.error_to_string() << "\n";
 
-            rc = iot_client.reconnect();
+            iot_client.do_reconnect();
             if(iot_client.is_last_err()){
               cout << errcnt++ << " - Reconnect Failed: " << iot_client.error_to_string() << "\n";
             }
@@ -198,7 +198,6 @@ int main(int argc, char *argv[]){
 
     cout << "Error-Count: " << errcnt << "\n";
   }
-
 
 lERR:
   if(err) cout << "Err: " << err << "\n";

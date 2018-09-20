@@ -38,6 +38,18 @@ void mqtt::client::do_publish(string const& topic, string const& payload){
   return;
 }
 
+void mqtt::client::do_reconnect(){
+  int rc = reconnect();
+  last_err = static_cast<mqtt::errors>(rc);
+  return;
+}
+
+void mqtt::client::do_loop(uint32_t milliseconds){
+  int rc = loop(int(milliseconds),1);
+  last_err = static_cast<mqtt::errors>(rc);
+  return;
+}
+
 //-----
 
 void mqtt::client::set_last_err(int rc){
