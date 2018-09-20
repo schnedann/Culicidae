@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <cstdint>
+#include <vector>
 
 #include <mosquittopp.h>
 
@@ -38,6 +39,9 @@ class client : public mosqpp::mosquittopp{
 private:
   errors last_err;
   bool connected;
+
+  std::vector<std::string> subscribed_to;
+
 public:
 
   constexpr static uint16_t const MAX_PAYLOAD = 50;
@@ -45,7 +49,7 @@ public:
   static std::string const PUBLISH_TOPIC;
 
   client (const std::string &id, const std::string &host, uint16_t port);
-  ~client()=default;
+  ~client();
 
   void do_subscribe(std::string const& topic);
   void do_publish(std::string const& topic, std::string const& payload);

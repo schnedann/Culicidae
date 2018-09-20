@@ -16,8 +16,24 @@ string const mqtt::client::PUBLISH_TOPIC = "EXAMPLE_TOPIC";
  * @param port
  */
 mqtt::client::client(string const& id, string const& host, uint16_t port) : mosquittopp(id.c_str()),last_err(mqtt::errors::UNKNOWN),connected(false){
-  if(mqtt::errors::SUCCESS == static_cast<mqtt::errors>(connect(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE)))){
+  int rc = connect(host, port, static_cast<int>(DEFAULT_KEEP_ALIVE));
+  last_err = static_cast<mqtt::errors>(rc);
+  if(mqtt::errors::SUCCESS == last_err){
     connected = true;
+  }
+  return;
+}
+
+mqtt::client::~client()
+{
+  int rc;
+  for(string topic:subscribed_to){
+    rc = unsubscribe(nullptr,topic);
+  }
+  rc = disconnect();
+  last_err = static_cast<mqtt::errors>(rc);
+  if(mqtt::errors::SUCCESS == last_err){
+    connected = false;
   }
   return;
 }
@@ -31,6 +47,9 @@ mqtt::client::client(string const& id, string const& host, uint16_t port) : mosq
 void mqtt::client::do_subscribe(string const& topic){
   int rc = subscribe(nullptr, topic);;
   last_err = static_cast<mqtt::errors>(rc);
+  if(mqtt::errors::SUCCESS == last_err){
+    subscribed_to.push_back(topic);
+  }
   return;
 }
 
