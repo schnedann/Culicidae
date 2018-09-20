@@ -13,7 +13,7 @@
 using namespace std;
 
 constexpr static bool   const USE_RTCYCLE   = false;
-constexpr static uint32_t const MAX_CYCLES  = 5000;
+constexpr static uint32_t const MAX_CYCLES  = 150;
 
 
 constexpr static long   const NSEC_PER_SEC   = 1000000000;
@@ -156,26 +156,27 @@ int main(int argc, char *argv[]){
           }
 
           if(CLIENT_is_PUBLISHER){
-            if(!iot_client.is_last_err()){
-              string payload1 = "STATUS";
-              iot_client.do_publish(MQTT_TOPIC,payload1);
-            }else{
-              cout << errcnt++ << " - not Published 1: " << iot_client.error_to_string() << "\n";
-            }
-            if(!iot_client.is_last_err()){
-              string payload2 = "ON";
-              iot_client.do_publish(MQTT_TOPIC,payload2);
-            }else{
-              cout << errcnt++ << " - not Published 2: " << iot_client.error_to_string() << "\n";
-            }
-            if(!iot_client.is_last_err()){
-              string payload3 = "OFF";
-              iot_client.do_publish(MQTT_TOPIC,payload3);
-            }else{
-              cout << errcnt++ << " - not Published 3: " << iot_client.error_to_string() << "\n";
+            if((cnt%5)==0){
+              if(!iot_client.is_last_err()){
+                string payload1 = "STATUS";
+                iot_client.do_publish(MQTT_TOPIC,payload1);
+              }else{
+                cout << errcnt++ << " - not Published 1: " << iot_client.error_to_string() << "\n";
+              }
+              if(!iot_client.is_last_err()){
+                string payload2 = "ON";
+                iot_client.do_publish(MQTT_TOPIC,payload2);
+              }else{
+                cout << errcnt++ << " - not Published 2: " << iot_client.error_to_string() << "\n";
+              }
+              if(!iot_client.is_last_err()){
+                string payload3 = "OFF";
+                iot_client.do_publish(MQTT_TOPIC,payload3);
+              }else{
+                cout << errcnt++ << " - not Published 3: " << iot_client.error_to_string() << "\n";
+              }
             }
           }
-
         } //work
 
         { //Maximum Cycles
