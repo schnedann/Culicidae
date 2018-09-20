@@ -145,7 +145,7 @@ int main(int argc, char *argv[]){
       while(true){
         { //Do Work
           //rc = iot_client.loop(25,1);
-          iot_client.do_loop(25);
+          iot_client.do_loop(0);
           if(iot_client.is_last_err()){
             cout << errcnt++ << " - Loop Error: "<< iot_client.error_to_string() << "\n";
 
