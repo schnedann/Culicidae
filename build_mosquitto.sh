@@ -1,5 +1,5 @@
 #!/bin/bash
-./get_mosquitto
+./get_mosquitto.sh
 if(test -d mosquitto)
 then
 cd mosquitto
