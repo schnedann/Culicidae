@@ -5,11 +5,14 @@ CONFIG -= qt
 
 SOURCES += \
         main.cpp \
-    mqtt.cpp
+    mqtt.cpp \
+    spooky2/SpookyV2.cpp
 
 HEADERS += \
     ../mosquitto/lib/cpp/mosquittopp.h \
-    mqtt.h
+    mqtt.h \
+    spooky2/SpookyV2.h \
+    meta.h
 
 INCLUDEPATH += $$PWD/../mosquitto/lib
 INCLUDEPATH += $$PWD/../mosquitto/lib/cpp

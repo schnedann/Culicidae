@@ -8,7 +8,7 @@
 //   Feb  5 2012: adjusted definitions of uint* to be more portable
 //   Mar 30 2012: 3 bytes/cycle, not 4.  Alpha was 4 but wasn't thorough enough.
 //   August 5 2012: SpookyV2 (different results)
-// 
+//
 // Up to 3 bytes/cycle for long messages.  Reasonably fast for short messages.
 // All 1 or 2 bit deltas achieve avalanche within 1% bias per output bit.
 //
@@ -20,13 +20,13 @@
 //
 // Google's CityHash has similar specs to SpookyHash, and CityHash is faster
 // on new Intel boxes.  MD4 and MD5 also have similar specs, but they are orders
-// of magnitude slower.  CRCs are two or more times slower, but unlike 
-// SpookyHash, they have nice math for combining the CRCs of pieces to form 
-// the CRCs of wholes.  There are also cryptographic hashes, but those are even 
+// of magnitude slower.  CRCs are two or more times slower, but unlike
+// SpookyHash, they have nice math for combining the CRCs of pieces to form
+// the CRCs of wholes.  There are also cryptographic hashes, but those are even
 // slower than MD5.
 //
 
-#include <stddef.h>
+#include <cstddef>
 
 #ifdef _MSC_VER
 # define INLINE __forceinline
@@ -35,8 +35,8 @@
   typedef  unsigned __int16 uint16;
   typedef  unsigned __int8  uint8;
 #else
-# include <stdint.h>
-# define INLINE inline
+  #include <cstdint>
+  #define INLINE inline
   typedef  uint64_t  uint64;
   typedef  uint32_t  uint32;
   typedef  uint16_t  uint16;
@@ -79,7 +79,7 @@ public:
     {
         uint64 hash1 = seed, hash2 = seed;
         Hash128(message, length, &hash1, &hash2);
-        return (uint32)hash1;
+        return static_cast<uint32>(hash1);
     }
 
     //
@@ -88,7 +88,7 @@ public:
     void Init(
         uint64 seed1,       // any 64-bit value will do, including 0
         uint64 seed2);      // different seeds produce independent hashes
-    
+
     //
     // Update: add a piece of a message to a SpookyHash state
     //
@@ -131,23 +131,23 @@ public:
     // I tried 3 pairs of each; they all differed by at least 212 bits.
     //
     static INLINE void Mix(
-        const uint64 *data, 
+        const uint64 *data,
         uint64 &s0, uint64 &s1, uint64 &s2, uint64 &s3,
         uint64 &s4, uint64 &s5, uint64 &s6, uint64 &s7,
         uint64 &s8, uint64 &s9, uint64 &s10,uint64 &s11)
     {
-      s0 += data[0];    s2 ^= s10;    s11 ^= s0;    s0 = Rot64(s0,11);    s11 += s1;
-      s1 += data[1];    s3 ^= s11;    s0 ^= s1;    s1 = Rot64(s1,32);    s0 += s2;
-      s2 += data[2];    s4 ^= s0;    s1 ^= s2;    s2 = Rot64(s2,43);    s1 += s3;
-      s3 += data[3];    s5 ^= s1;    s2 ^= s3;    s3 = Rot64(s3,31);    s2 += s4;
-      s4 += data[4];    s6 ^= s2;    s3 ^= s4;    s4 = Rot64(s4,17);    s3 += s5;
-      s5 += data[5];    s7 ^= s3;    s4 ^= s5;    s5 = Rot64(s5,28);    s4 += s6;
-      s6 += data[6];    s8 ^= s4;    s5 ^= s6;    s6 = Rot64(s6,39);    s5 += s7;
-      s7 += data[7];    s9 ^= s5;    s6 ^= s7;    s7 = Rot64(s7,57);    s6 += s8;
-      s8 += data[8];    s10 ^= s6;    s7 ^= s8;    s8 = Rot64(s8,55);    s7 += s9;
-      s9 += data[9];    s11 ^= s7;    s8 ^= s9;    s9 = Rot64(s9,54);    s8 += s10;
-      s10 += data[10];    s0 ^= s8;    s9 ^= s10;    s10 = Rot64(s10,22);    s9 += s11;
-      s11 += data[11];    s1 ^= s9;    s10 ^= s11;    s11 = Rot64(s11,46);    s10 += s0;
+      s0 += data[0];    s2 ^= s10; s11 ^= s0;   s0 = Rot64(s0,11);  s11 += s1;
+      s1 += data[1];    s3 ^= s11;  s0 ^= s1;   s1 = Rot64(s1,32);   s0 += s2;
+      s2 += data[2];    s4 ^= s0;   s1 ^= s2;   s2 = Rot64(s2,43);   s1 += s3;
+      s3 += data[3];    s5 ^= s1;   s2 ^= s3;   s3 = Rot64(s3,31);   s2 += s4;
+      s4 += data[4];    s6 ^= s2;   s3 ^= s4;   s4 = Rot64(s4,17);   s3 += s5;
+      s5 += data[5];    s7 ^= s3;   s4 ^= s5;   s5 = Rot64(s5,28);   s4 += s6;
+      s6 += data[6];    s8 ^= s4;   s5 ^= s6;   s6 = Rot64(s6,39);   s5 += s7;
+      s7 += data[7];    s9 ^= s5;   s6 ^= s7;   s7 = Rot64(s7,57);   s6 += s8;
+      s8 += data[8];   s10 ^= s6;   s7 ^= s8;   s8 = Rot64(s8,55);   s7 += s9;
+      s9 += data[9];   s11 ^= s7;   s8 ^= s9;   s9 = Rot64(s9,54);   s8 += s10;
+      s10 += data[10];  s0 ^= s8;   s9 ^= s10; s10 = Rot64(s10,22);  s9 += s11;
+      s11 += data[11];  s1 ^= s9;  s10 ^= s11; s11 = Rot64(s11,46); s10 += s0;
     }
 
     //
@@ -168,27 +168,27 @@ public:
     //
     static INLINE void EndPartial(
         uint64 &h0, uint64 &h1, uint64 &h2, uint64 &h3,
-        uint64 &h4, uint64 &h5, uint64 &h6, uint64 &h7, 
+        uint64 &h4, uint64 &h5, uint64 &h6, uint64 &h7,
         uint64 &h8, uint64 &h9, uint64 &h10,uint64 &h11)
     {
-        h11+= h1;    h2 ^= h11;   h1 = Rot64(h1,44);
-        h0 += h2;    h3 ^= h0;    h2 = Rot64(h2,15);
-        h1 += h3;    h4 ^= h1;    h3 = Rot64(h3,34);
-        h2 += h4;    h5 ^= h2;    h4 = Rot64(h4,21);
-        h3 += h5;    h6 ^= h3;    h5 = Rot64(h5,38);
-        h4 += h6;    h7 ^= h4;    h6 = Rot64(h6,33);
-        h5 += h7;    h8 ^= h5;    h7 = Rot64(h7,10);
-        h6 += h8;    h9 ^= h6;    h8 = Rot64(h8,13);
-        h7 += h9;    h10^= h7;    h9 = Rot64(h9,38);
-        h8 += h10;   h11^= h8;    h10= Rot64(h10,53);
-        h9 += h11;   h0 ^= h9;    h11= Rot64(h11,42);
-        h10+= h0;    h1 ^= h10;   h0 = Rot64(h0,54);
+        h11+= h1;  h2 ^= h11; h1 = Rot64(h1,44);
+        h0 += h2;  h3 ^= h0;  h2 = Rot64(h2,15);
+        h1 += h3;  h4 ^= h1;  h3 = Rot64(h3,34);
+        h2 += h4;  h5 ^= h2;  h4 = Rot64(h4,21);
+        h3 += h5;  h6 ^= h3;  h5 = Rot64(h5,38);
+        h4 += h6;  h7 ^= h4;  h6 = Rot64(h6,33);
+        h5 += h7;  h8 ^= h5;  h7 = Rot64(h7,10);
+        h6 += h8;  h9 ^= h6;  h8 = Rot64(h8,13);
+        h7 += h9;  h10^= h7;  h9 = Rot64(h9,38);
+        h8 += h10; h11^= h8;  h10= Rot64(h10,53);
+        h9 += h11; h0 ^= h9;  h11= Rot64(h11,42);
+        h10+= h0;  h1 ^= h10; h0 = Rot64(h0,54);
     }
 
     static INLINE void End(
-        const uint64 *data, 
+        const uint64 *data,
         uint64 &h0, uint64 &h1, uint64 &h2, uint64 &h3,
-        uint64 &h4, uint64 &h5, uint64 &h6, uint64 &h7, 
+        uint64 &h4, uint64 &h5, uint64 &h6, uint64 &h7,
         uint64 &h8, uint64 &h9, uint64 &h10,uint64 &h11)
     {
         h0 += data[0];   h1 += data[1];   h2 += data[2];   h3 += data[3];
@@ -200,7 +200,7 @@ public:
     }
 
     //
-    // The goal is for each bit of the input to expand into 128 bits of 
+    // The goal is for each bit of the input to expand into 128 bits of
     //   apparent entropy before it is fully overwritten.
     // n trials both set and cleared at least m bits of h0 h1 h2 h3
     //   n: 2   m: 29
@@ -256,7 +256,7 @@ public:
         h0 ^= h3;  h3 = Rot64(h3,25);  h0 += h3;
         h1 ^= h0;  h0 = Rot64(h0,63);  h1 += h0;
     }
-    
+
 private:
 
     //
@@ -264,7 +264,7 @@ private:
     // Short has a low startup cost, the normal mode is good for long
     // keys, the cost crossover is at about 192 bytes.  The two modes were
     // held to the same quality bar.
-    // 
+    //
     static void Short(
         const void *message,  // message (array of bytes, not necessarily aligned)
         size_t length,        // length of message (in bytes)
