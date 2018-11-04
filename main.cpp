@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cstdint>
 #include <ctime>
+#include <array>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
@@ -12,16 +13,17 @@
 
 using namespace std;
 
-constexpr static bool   const USE_ASYNCAPI  = true;
+constexpr static bool   const USE_ASYNCAPI  = false;
 constexpr static bool   const USE_RTCYCLE   = false;
 constexpr static uint32_t const MAX_CYCLES  = 150;
 
 
 constexpr static long   const NSEC_PER_SEC   = 1000000000;
 //                                            ssmmmuuunnn
-constexpr static size_t const INTERVAL       = 1000000000; //1000ms = 1.0s
+constexpr static size_t const INTERVAL       =   50000000; //1000ms = 1.0s
 constexpr static size_t const MAX_SAFE_STACK = 8*1024;
 //-----
+          static string const   TEST_BROKER_00 = "127.0.0.1";
           static string const   TEST_BROKER_01 = "test.mosquitto.org";
           static string const   TEST_BROKER_02 = "iot.eclipse.org";
 
@@ -67,8 +69,8 @@ void ressource_usage(){
  * --> assume Code has no effect at last
  */
 void stack_prefault(){
-  unsigned char dummy[MAX_SAFE_STACK];
-  memset(&dummy, 0, MAX_SAFE_STACK);
+  array<char,MAX_SAFE_STACK> dummy;
+  std::memset(dummy.data(), 0, dummy.size());
   return;
 }
 
@@ -114,8 +116,7 @@ int main(int argc, char *argv[]){
       err=-2;
       goto lERR;
     }
-    /* Stack reservieren */
-    stack_prefault();                   //?
+    stack_prefault();                   //Stack reservieren
     clock_gettime(CLOCK_MONOTONIC, &time); //Guess CLOCK_PROCESS_CPUTIME_ID should work alike...
   }
 
@@ -130,7 +131,7 @@ int main(int argc, char *argv[]){
   if (argc > 1){
     host = string(argv[1]);
   }else{
-    host = TEST_BROKER_01;
+    host = TEST_BROKER_00;
   }
   {
     mqtt::client iot_client = mqtt::client(CLIENT_ID, host, MQTT_PORT, USE_ASYNCAPI);
