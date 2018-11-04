@@ -7,5 +7,9 @@ git pull
 cd ..
 else
 git clone https://github.com/schnedann/mosquitto.git
+cd mosquitto
+pwd
+configure
+cd ..
 fi
 pwd
